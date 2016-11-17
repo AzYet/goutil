@@ -1,0 +1,8 @@
+main
+.idea/
+pkg/
+target/
+.DS_Store
+*.swp
+*.*~
+medivh
