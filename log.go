@@ -15,8 +15,8 @@ func NewLogrusWithSentryHook(DSL, release string) *logrus.Logger {
 	l.Level = logrus.DebugLevel
 
 	if DSL != "" {
-		client, err := raven.New("abc")
-		client.SetRelease("123")
+		client, err := raven.New(DSL)
+		client.SetRelease(release)
 		if err != nil {
 			l.Errorf("failed to create raven agent %v.", err)
 		} else if h, err := logrus_sentry.NewWithClientSentryHook(client, []logrus.Level{
