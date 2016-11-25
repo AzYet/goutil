@@ -15,7 +15,7 @@ func (t TickMinSec)Stop() {
 }
 
 func TickAtSecondPoint(interval time.Duration, delay time.Duration, Logger *logrus.Logger) TickMinSec {
-	tc := make(chan time.Time, 1)
+	tc := make(chan time.Time)
 	tms := TickMinSec{tc, make(chan int, 1) }
 	ts := time.Now()
 	go func() {
