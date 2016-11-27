@@ -28,7 +28,7 @@ type Attachment struct {
 	Fields     []*Field `json:"fields"`
 	Footer     string   `json:"footer"`
 	FooterIcon string   `json:"footer_icon"`
-	TimeStamp  string   `json:"ts"`
+	TimeStamp  int64   `json:"ts"`
 }
 
 type SlackData struct {
@@ -41,19 +41,29 @@ type SlackData struct {
 	Attachments []*Attachment `json:"attachments,omitempty"`
 }
 
-func (sd *SlackData) Attach(a *Attachment) {
+func (sd *SlackData) Attach(as ...*Attachment) {
 	if sd == nil {
 		return
 	}
 	if sd.Attachments == nil {
-		sd.Attachments = []*Attachment{a}
-	} else {
+		sd.Attachments = make([]*Attachment, 0, len(as))
+	}
+	for _, a := range as {
 		sd.Attachments = append(sd.Attachments, a)
 	}
+
 }
 func (attachment *Attachment) AddField(field Field) *Attachment {
 	attachment.Fields = append(attachment.Fields, &field)
 	return attachment
+}
+
+func NewAttatchment(title string) *Attachment {
+	return &Attachment{
+		Title:title,
+		Color:"#FF0000",
+		TimeStamp:time.Now().Unix(),
+	}
 }
 
 func FeedSlack(d *SlackData, Logger *logrus.Logger) {
@@ -67,7 +77,7 @@ func FeedSlack(d *SlackData, Logger *logrus.Logger) {
 			Logger.Println("create http post err", err)
 		} else {
 			r.Header.Add("Content-Type", "application/json")
-			for i := 0; i < 1; i++ {
+			for i := 0; i < 3; i++ {
 				if resp, err := client.Do(r); err != nil {
 					Logger.Println("post err", err)
 				} else {

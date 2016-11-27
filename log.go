@@ -1,7 +1,7 @@
 package go_utils
 
 import (
-	"github.com/x-cray/logrus-prefixed-formatter"
+	"github.com/AzYet/logrus-prefixed-formatter"
 	"github.com/getsentry/raven-go"
 	"github.com/evalphobia/logrus_sentry"
 	"github.com/Sirupsen/logrus"
