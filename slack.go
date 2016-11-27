@@ -15,20 +15,20 @@ type Field struct {
 }
 
 type Attachment struct {
-	Fallback   *string  `json:"fallback"`
-	Color      *string  `json:"color"`
-	PreText    *string  `json:"pretext"`
-	AuthorName *string  `json:"author_name"`
-	AuthorLink *string  `json:"author_link"`
-	AuthorIcon *string  `json:"author_icon"`
-	Title      *string  `json:"title"`
-	TitleLink  *string  `json:"title_link"`
-	Text       *string  `json:"text"`
-	ImageUrl   *string  `json:"image_url"`
+	Fallback   string   `json:"fallback"`
+	Color      string   `json:"color"`
+	PreText    string   `json:"pretext"`
+	AuthorName string   `json:"author_name"`
+	AuthorLink string   `json:"author_link"`
+	AuthorIcon string   `json:"author_icon"`
+	Title      string   `json:"title"`
+	TitleLink  string   `json:"title_link"`
+	Text       string   `json:"text"`
+	ImageUrl   string   `json:"image_url"`
 	Fields     []*Field `json:"fields"`
-	Footer     *string  `json:"footer"`
-	FooterIcon *string  `json:"footer_icon"`
-	TimeStamp  *string  `json:"ts"`
+	Footer     string   `json:"footer"`
+	FooterIcon string   `json:"footer_icon"`
+	TimeStamp  string   `json:"ts"`
 }
 
 type SlackData struct {
