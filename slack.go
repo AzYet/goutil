@@ -37,9 +37,19 @@ type SlackData struct {
 	IconEmoji   string       `json:"icon_emoji,omitempty"`
 	Channel     string       `json:"channel,omitempty"`
 	Text        string       `json:"text,omitempty"`
-	Attachments []Attachment `json:"attachments,omitempty"`
+	Attachments []*Attachment `json:"attachments,omitempty"`
 }
 
+func (sd *SlackData) Attach(a *Attachment) {
+	if sd == nil {
+		return
+	}
+	if sd.Attachments == nil {
+		sd.Attachments = []*Attachment{a}
+	} else {
+		sd.Attachments = append(sd.Attachments, a)
+	}
+}
 func (attachment *Attachment) AddField(field Field) *Attachment {
 	attachment.Fields = append(attachment.Fields, &field)
 	return attachment
