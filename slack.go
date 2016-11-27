@@ -28,6 +28,7 @@ type Attachment struct {
 	Fields     []*Field `json:"fields"`
 	Footer     *string  `json:"footer"`
 	FooterIcon *string  `json:"footer_icon"`
+	TimeStamp  *string  `json:"ts"`
 }
 
 type SlackData struct {
