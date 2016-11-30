@@ -26,7 +26,11 @@ func NewLogrusWithSentryHook(DSL, release string) *logrus.Logger {
 		}); err != nil {
 			l.Errorf("failed to create hook %v.", err)
 		} else {
-			h.StacktraceConfiguration.Enable = true
+			h.StacktraceConfiguration = logrus_sentry.StackTraceConfiguration{
+				Enable :true,
+				// the level at which to start capturing stacktraces
+				Level : logrus.ErrorLevel,
+			}
 			l.Hooks.Add(h)
 			l.Infoln("sentry hook added.")
 		}
