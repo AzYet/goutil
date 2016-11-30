@@ -26,6 +26,7 @@ func NewLogrusWithSentryHook(DSL, release string) *logrus.Logger {
 		}); err != nil {
 			l.Errorf("failed to create hook %v.", err)
 		} else {
+			h.StacktraceConfiguration.Enable = true
 			l.Hooks.Add(h)
 			l.Infoln("sentry hook added.")
 		}
