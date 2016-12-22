@@ -6,7 +6,7 @@ import (
 )
 
 type TickMinSec struct {
-	C <-chan time.Time
+	C chan time.Time
 	s chan int
 }
 
