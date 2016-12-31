@@ -32,7 +32,7 @@ func NewLogrusWithSentryHook(DSL, release string) *logrus.Logger {
 				Level : logrus.ErrorLevel,
 			}
 			l.Hooks.Add(h)
-			l.Infoln("sentry hook added.")
+			l.Debug("sentry hook added.")
 		}
 	}
 	return l

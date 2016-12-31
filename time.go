@@ -6,17 +6,21 @@ import (
 )
 
 type TickMinSec struct {
-	C chan time.Time
+	C <-chan time.Time
 	s chan int
+	t chan int
 }
 
 func (t TickMinSec)Stop() {
 	t.s <- 1
 }
+func (t TickMinSec)Tick() {
+	t.t <- 1
+}
 
 func TickAtSecondPoint(interval time.Duration, delay time.Duration, Logger *logrus.Logger) TickMinSec {
 	tc := make(chan time.Time)
-	tms := TickMinSec{tc, make(chan int, 1) }
+	tms := TickMinSec{tc, make(chan int, 1), make(chan int, 1) }
 	ts := time.Now()
 	go func() {
 		if sub := ts.Sub(ts.Truncate(interval)) - delay; sub >= 0 {
@@ -30,14 +34,15 @@ func TickAtSecondPoint(interval time.Duration, delay time.Duration, Logger *logr
 			tc <- time.Now()
 		}
 		for {
+			ts = time.Now()
 			select {
+			case <-time.NewTimer(ts.Truncate(interval).Add(interval).Add(delay).Sub(ts)).C:
+				tc <- time.Now()
+			case <-tms.t:
+				tc <- time.Now()
 			case <-tms.s:
 				return
-			default:
 			}
-			ts = time.Now()
-			time.Sleep(ts.Truncate(interval).Add(interval).Add(delay).Sub(ts))
-			tc <- time.Now()
 		}
 	}()
 	return tms
