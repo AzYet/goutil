@@ -38,3 +38,36 @@ func NewLogrusWithSentryHook(DSL, release string) *logrus.Logger {
 	return l
 }
 
+func LogBuilder(l *logrus.Logger, okLvl, errLvl int) func(err error, okStr, failStr string, fileds... string) func(values... interface{}) bool {
+	return func(err error, okStr, failStr string, fileds... string) func(values... interface{}) bool {
+		return func(values... interface{}) bool {
+			var logBody *logrus.Entry
+			if err == nil {
+				logBody = l.WithFields(logrus.Fields{})
+			} else {
+				logBody = l.WithError(err)
+			}
+			vLen := len(values)
+			for k, v := range fileds {
+				if k == vLen {
+					break
+				}
+				logBody = logBody.WithField(v, values[k])
+			}
+			if err == nil {
+				switch okLvl {
+				case 4:logBody.Info(okStr)
+				case 5 :logBody.Debug(okStr)
+				}
+			} else {
+				switch errLvl {
+				case 0:logBody.Panic(failStr)
+				case 1:logBody.Fatal(failStr)
+				case 2:logBody.Error(failStr)
+				case 3:logBody.Warn(failStr)
+				}
+			}
+			return err == nil
+		}
+	}
+}
