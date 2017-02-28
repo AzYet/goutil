@@ -10,9 +10,10 @@ import (
 	"golang.org/x/exp/inotify"
 	"strings"
 	"path"
+	"reflect"
 )
 
-// watch json file and decode it into pointer of struct, t must be a pointer
+// watch json file and decode it into pointer of struct, t must not be a value of struct not a pointer
 // init value will be returned as first return value
 // chan[0] is use to send operator, chan[1] is use to return value
 // send nil will load the latest value, send non-nil will return a chan to receive changes
@@ -38,14 +39,15 @@ func AutoReloader(path string, t interface{}, Logger *logrus.Logger) (interface{
 		for {
 			select {
 			case nb := <-fileChan:
-				if err := json.NewDecoder(bytes.NewReader(nb.Bz)).Decode(&t); err != nil {
+				t1 := reflect.New(reflect.TypeOf(t)).Interface()
+				if err := json.NewDecoder(bytes.NewReader(nb.Bz)).Decode(&t1); err != nil {
 					if !initiated {
 						Logger.Panicf("failed to decode to config: %v.", err)
 					} else {
 						Logger.Warn(err)
 					}
 				} else {
-					latest = t
+					latest = t1
 					bz := new(bytes.Buffer)
 					json.Indent(bz, nb.Bz, "", " ")
 					Logger.Info("config reloaded.")

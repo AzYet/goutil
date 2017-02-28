@@ -19,13 +19,12 @@ func TestAutoReloader(t *testing.T) {
 	if err := ioutil.WriteFile("/tmp/test.json", []byte(testFile), 0644); err != nil {
 		t.Error("failed to prepare file" + err.Error())
 	}
-	i, cs := AutoReloader("/tmp/test.json", &TestConfg{}, logrus.New())
+	i, cs := AutoReloader("/tmp/test.json", TestConfg{}, logrus.New())
 	c, ok := i.(*TestConfg)
-	cStr := fmt.Sprintln(c)
 	if !ok {
 		t.Errorf("return wrong type:%T %v", i, i)
 	}
-	fmt.Println("init value", cStr)
+	fmt.Println("init value", c)
 	if len(c.List) == 0 {
 		t.Error("failed to init")
 	}
@@ -43,9 +42,8 @@ func TestAutoReloader(t *testing.T) {
 	if !ok {
 		t.Errorf("return wrong type:%T %v", i, i)
 	}
-	c1Str := fmt.Sprintln(c1)
 	fmt.Println("new value", c1)
-	if cStr == c1Str {
+	if fmt.Sprintln(c) == fmt.Sprintln(c1) {
 		t.Error("failed to refresh")
 	}
 
@@ -64,9 +62,8 @@ func TestAutoReloader(t *testing.T) {
 	if !ok {
 		t.Errorf("return wrong type:%T %v", i, i)
 	}
-	c3Str := fmt.Sprintln(c3)
 	fmt.Println("new value from watch", c3)
-	if c3Str == c1Str {
+	if fmt.Sprintln(c1) == fmt.Sprintln(c3) {
 		t.Error("failed to refresh")
 	}
 }
