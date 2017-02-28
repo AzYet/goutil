@@ -55,9 +55,11 @@ func LogBuilder(l *logrus.Logger, okLvl, errLvl int) func(err error, okStr, fail
 				logBody = logBody.WithField(v, values[k])
 			}
 			if err == nil {
-				switch okLvl {
-				case 4:logBody.Info(okStr)
-				case 5 :logBody.Debug(okStr)
+				if okStr != "" {
+					switch okLvl {
+					case 4:logBody.Info(okStr)
+					case 5 :logBody.Debug(okStr)
+					}
 				}
 			} else {
 				switch errLvl {
