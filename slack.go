@@ -53,6 +53,11 @@ func (sd *SlackData) Attach(as ...*Attachment) {
 	}
 
 }
+
+func (sd *SlackData) Send() {
+	FeedSlack(sd, logrus.New())
+}
+
 func (attachment *Attachment) AddField(field Field) *Attachment {
 	attachment.Fields = append(attachment.Fields, &field)
 	return attachment
@@ -70,21 +75,22 @@ func FeedSlack(d *SlackData, Logger *logrus.Logger) {
 	client := &http.Client{Timeout:time.Second * 45}
 	bz, err := json.Marshal(*d)
 	if err != nil {
-		Logger.Println("json marshal err", err)
-	} else {
-		Logger.Println(string(bz))
-		if r, err := http.NewRequest("POST", "https://hooks.slack.com/services/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", bytes.NewBuffer(bz)); err != nil {
-			Logger.Println("create http post err", err)
+		Logger.Warnln("json marshal err", err)
+		return
+	}
+	Logger.Println(string(bz))
+	r, err := http.NewRequest("POST", "https://hooks.slack.com/services/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", bytes.NewBuffer(bz))
+	if err != nil {
+		Logger.Warnln("create http post err", err)
+		return
+	}
+	r.Header.Add("Content-Type", "application/json")
+	for i := 0; i < 3; i++ {
+		if resp, err := client.Do(r); err != nil {
+			Logger.Warnln("post err", err)
 		} else {
-			r.Header.Add("Content-Type", "application/json")
-			for i := 0; i < 3; i++ {
-				if resp, err := client.Do(r); err != nil {
-					Logger.Println("post err", err)
-				} else {
-					Logger.Printf("Slack api updated, status %v.", resp.StatusCode)
-					break
-				}
-			}
+			Logger.Printf("Slack api updated, status %v.", resp.StatusCode)
+			break
 		}
 	}
 }

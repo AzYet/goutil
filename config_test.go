@@ -2,7 +2,6 @@ package go_utils
 
 import (
 	"testing"
-	"github.com/Sirupsen/logrus"
 	"io/ioutil"
 	"fmt"
 	"time"
@@ -13,13 +12,19 @@ type TestConfg struct {
 	Map  map[string]int
 }
 
+func (c *TestConfg)Set(l func(), w func()) {
+
+}
+
 func TestAutoReloader(t *testing.T) {
 	//test init
 	testFile := `{"list":["abc","cd"], "map":{"a":1,"b":2}}`
+	//testFile := `list=["abc","cd"]
+	//map={"a"=1,"b"=2}`
 	if err := ioutil.WriteFile("/tmp/test.json", []byte(testFile), 0644); err != nil {
 		t.Error("failed to prepare file" + err.Error())
 	}
-	i, cs := AutoReloader("/tmp/test.json", TestConfg{}, logrus.New())
+	i, l, w := AutoReloader("/tmp/test.json", TestConfg{})
 	c, ok := i.(*TestConfg)
 	if !ok {
 		t.Errorf("return wrong type:%T %v", i, i)
@@ -36,9 +41,7 @@ func TestAutoReloader(t *testing.T) {
 		t.Error("failed to change file" + err.Error())
 	}
 	time.Sleep(time.Second)
-	cs[0] <- nil
-	r := <-cs[1]
-	c1, ok := r.(*TestConfg)
+	c1, ok := l().(*TestConfg)
 	if !ok {
 		t.Errorf("return wrong type:%T %v", i, i)
 	}
@@ -48,17 +51,15 @@ func TestAutoReloader(t *testing.T) {
 	}
 
 	// test watch
-	cs[0] <- 1
-	ch, ok := (<-cs[1]).(chan interface{})
-	if !ok {
-		t.Errorf("return wrong type:%T %v", i, i)
-	}
+	fmt.Println("testing watch")
+	wc := w()
+	fmt.Println("rewrite file.")
 	testFile = `{"list":["abcde","cdef"], "map":{"a":123,"b":234}}`
 	if err := ioutil.WriteFile("/tmp/test.json", []byte(testFile), 0644); err != nil {
 		t.Error("failed to change file" + err.Error())
 	}
 	time.Sleep(time.Second)
-	c3, ok := (<-ch).(*TestConfg)
+	c3, ok := (<-wc).(*TestConfg)
 	if !ok {
 		t.Errorf("return wrong type:%T %v", i, i)
 	}
