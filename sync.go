@@ -16,6 +16,20 @@ func NewWorkerGroup(workerNum int) (*sync.WaitGroup, func() func()) {
 		}
 	}
 }
+func NewWorkerGroupWithReturn(workerNum int) (*sync.WaitGroup, chan interface{}, func() func(res interface{})) {
+	routine := make(chan int, workerNum)
+	w := new(sync.WaitGroup)
+	c := make(chan interface{})
+	return w, c, func() func(interface{}) {
+		routine <- 1
+		w.Add(1)
+		return func(r interface{}) {
+			c <- r
+			w.Done()
+			<-routine
+		}
+	}
+}
 
 //Create a fixed size pool of recycled resource, call the return func with nil to get resource, call with resource to return to pool , when pool exhausts, getting resource causes block
 //make sure return resource when done, do not return nil to pool, as pool will not check for nil, unless you intent to
