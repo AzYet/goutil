@@ -79,7 +79,6 @@ func NewLogrusWithSentryHook(color bool, DSL, release string) *logrus.Logger {
 			Level : logrus.ErrorLevel,
 		}
 		l.Hooks.Add(h)
-		l.Debug("sentry hook added.")
 	}
 	return l
 }
