@@ -12,10 +12,10 @@ func TestLogBuilder1(t *testing.T) {
 	defer func() {
 		fmt.Println(recover())
 	}()
-	l := NewLogger("", "", "", true, true)
+	l := NewLogger("", "", "", true)
 	//test normal func
 	fmt.Println("_________________should info success")
-	l.EI(nil, "success", "fail")()
+	l.Info("success")
 	fmt.Println("_________________should warn error")
 	l.WI(errors.New("i am err"), "success", "fail")()
 	fmt.Println("_________________should panic")
