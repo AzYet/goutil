@@ -1,4 +1,4 @@
-package go_utils
+package goutil
 
 import (
 	"github.com/AzYet/logrus-prefixed-formatter"
