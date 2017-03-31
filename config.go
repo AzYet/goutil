@@ -1,22 +1,22 @@
 package goutil
 
 import (
-	"encoding/json"
 	"bytes"
-	"path/filepath"
-	"sync"
+	"encoding/json"
 	"io/ioutil"
-	"golang.org/x/exp/inotify"
-	"strings"
 	"path"
+	"path/filepath"
 	"reflect"
+	"strings"
+	"sync"
+
+	"golang.org/x/exp/inotify"
 )
 
-// watch json file and decode it into pointer of struct, t must not be a value of struct not a pointer
+// AutoReloader watch json file and decode it into pointer of struct, t must not be a value of struct not a pointer
 // init value will be returned as first return value
 // chan[0] is use to send operator, chan[1] is use to return value
 // send nil will load the latest value, send non-nil will return a chan to receive changes
-
 func AutoReloader(path string, t interface{}) (interface{}, func() interface{}, func() chan interface{}) {
 	d, f := filepath.Split(path)
 	if d == "" {
@@ -24,14 +24,14 @@ func AutoReloader(path string, t interface{}) (interface{}, func() interface{}, 
 	}
 	var (
 		initiated bool
-		w = new(sync.WaitGroup)
-		latest interface{}
-		in, out = make(chan int), make(chan interface{})
+		w         = new(sync.WaitGroup)
+		latest    interface{}
+		in, out   = make(chan int), make(chan interface{})
 	)
 	w.Add(1)
 	go func() {
 		fileChan := ReadAndWatchFile(d, f)
-		var watchersChan  []chan interface{}
+		var watchersChan []chan interface{}
 		for {
 			select {
 			case nb := <-fileChan:
@@ -80,7 +80,10 @@ func AutoReloader(path string, t interface{}) (interface{}, func() interface{}, 
 	return latest, load, watch
 }
 
-type NameBytes struct{ Name string; Bz []byte }
+type NameBytes struct {
+	Name string
+	Bz   []byte
+}
 
 func ReadAndWatchFile(dir string, fileList ...string) chan NameBytes {
 	bzChan := make(chan NameBytes, len(fileList))
@@ -101,9 +104,9 @@ func ReadAndWatchFile(dir string, fileList ...string) chan NameBytes {
 	}
 	go func() {
 		for event := range watcher.Event {
-			if (event.Mask & inotify.IN_CLOSE_WRITE == inotify.IN_CLOSE_WRITE ||
-				event.Mask & inotify.IN_MOVED_TO == inotify.IN_MOVED_TO ) &&
-				nameMap[event.Name[strings.LastIndex(event.Name, "/") + 1:]] {
+			if (event.Mask&inotify.IN_CLOSE_WRITE == inotify.IN_CLOSE_WRITE ||
+				event.Mask&inotify.IN_MOVED_TO == inotify.IN_MOVED_TO) &&
+				nameMap[event.Name[strings.LastIndex(event.Name, "/")+1:]] {
 				readSendFn(event.Name)
 			}
 		}
