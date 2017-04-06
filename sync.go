@@ -4,10 +4,10 @@ import (
 	"sync"
 )
 
-func NewWorkerGroup(workerNum int) (*sync.WaitGroup, func() func()) {
+func NewWorkerGroup(workerNum int) (chan int, *sync.WaitGroup, func() func()) {
 	routine := make(chan int, workerNum)
 	w := new(sync.WaitGroup)
-	return w, func() func() {
+	return routine, w, func() func() {
 		routine <- 1
 		w.Add(1)
 		return func() {
