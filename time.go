@@ -38,8 +38,13 @@ func NewTicker(interval time.Duration, delay time.Duration) *Ticker {
 		}
 		for {
 			ts = time.Now()
+			timer := time.NewTimer(ts.Truncate(tms.I).Add(tms.I).Add(tms.D).Sub(ts))
 			select {
-			case <-time.NewTimer(ts.Truncate(tms.I).Add(tms.I).Add(tms.D).Sub(ts)).C:
+			case <-timer.C:
+					select {
+					case <-tc:
+					default:
+					}
 				tc <- time.Now()
 			case i := <-tms.s:
 				if i < 0 {
@@ -52,6 +57,7 @@ func NewTicker(interval time.Duration, delay time.Duration) *Ticker {
 				}
 
 			}
+			timer.Stop()
 		}
 	}()
 	return tms
