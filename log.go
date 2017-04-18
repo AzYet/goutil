@@ -1,7 +1,7 @@
 package goutil
 
 import (
-	"github.com/AzYet/logrus-prefixed-formatter"
+	"github.com/x-cray/logrus-prefixed-formatter"
 	"github.com/Sirupsen/logrus"
 	"github.com/evalphobia/logrus_sentry"
 	"github.com/getsentry/raven-go"
@@ -92,8 +92,8 @@ func LogBuilder(l *logrus.Logger, okLvl, errLvl int) func(err error, okStr, fail
 	return func(err error, okStr, failStr string, fileds ...string) func(values ...interface{}) bool {
 		var (
 			logBody *logrus.Entry
-			ok      = err == nil
-			vLen    int
+			ok = err == nil
+			vLen int
 		)
 
 		if !ok {
