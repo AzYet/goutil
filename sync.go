@@ -19,7 +19,7 @@ func NewWorkerGroup(workerNum int) (chan int, *sync.WaitGroup, func() func()) {
 func NewWorkerGroupWithReturn(workerNum int) (*sync.WaitGroup, chan interface{}, func() func(res interface{})) {
 	routine := make(chan int, workerNum)
 	w := new(sync.WaitGroup)
-	c := make(chan interface{})
+	c := make(chan interface{}, workerNum)
 	return w, c, func() func(interface{}) {
 		routine <- 1
 		w.Add(1)
