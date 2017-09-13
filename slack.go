@@ -28,7 +28,8 @@ type Attachment struct {
 	Fields     []*Field `json:"fields"`
 	Footer     string   `json:"footer"`
 	FooterIcon string   `json:"footer_icon"`
-	TimeStamp  int64   `json:"ts"`
+	TimeStamp  int64    `json:"ts"`
+	MarkdownIn []string `json:"mrkdwn_in,omitempty"`
 }
 
 type SlackData struct {
@@ -65,14 +66,14 @@ func (attachment *Attachment) AddField(field Field) *Attachment {
 
 func NewAttatchment(title string) *Attachment {
 	return &Attachment{
-		Title:title,
-		Color:"#FF0000",
-		TimeStamp:time.Now().Unix(),
+		Title:     title,
+		Color:     "#FF0000",
+		TimeStamp: time.Now().Unix(),
 	}
 }
 
 func FeedSlack(d *SlackData, Logger *logrus.Logger) {
-	client := &http.Client{Timeout:time.Second * 45}
+	client := &http.Client{Timeout: time.Second * 45}
 	bz, err := json.Marshal(*d)
 	if err != nil {
 		Logger.Warnln("json marshal err", err)

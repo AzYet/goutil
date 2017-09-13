@@ -13,11 +13,11 @@ func NewLogger(logPath, DSN, release string, color bool) *logrus.Logger {
 	l := logrus.New()
 	fmtr := &prefixed.TextFormatter{}
 	fmtr.TimestampFormat = "2006/01/02 15:04:05"
-	if color {
-		fmtr.ForceColors = true
-		//fmtr.DisableColors = false
-		fmtr.ForceFormatting = true
-		fmtr.FullTimestamp = true
+	fmtr.ForceFormatting = true
+	fmtr.FullTimestamp = true
+	fmtr.ForceColors = true
+	if !color {
+		fmtr.DisableColors = true
 	}
 	l.Formatter = fmtr
 	l.Level = logrus.DebugLevel
