@@ -9,7 +9,7 @@ import (
 )
 
 //NewLogger creates a new *logrus.Logger with sentry hook if DSN and Version provided
-func NewLogger(logPath, DSN, release string, color bool) *logrus.Logger {
+func NewLogger(logPath, DSN, release string, color bool, lvlEtc ...interface{}) *logrus.Logger {
 	l := logrus.New()
 	fmtr := &prefixed.TextFormatter{}
 	fmtr.TimestampFormat = "2006/01/02 15:04:05"
@@ -23,14 +23,22 @@ func NewLogger(logPath, DSN, release string, color bool) *logrus.Logger {
 	l.Level = logrus.DebugLevel
 
 	if logPath != "" {
-		rotator := &lumberjack.Logger{
+		l.Out = &lumberjack.Logger{
 			Filename:   logPath,
 			MaxSize:    150, // megabytes
 			MaxBackups: 3,
 			MaxAge:     28, //days
 		}
-		l.Out = (rotator)
 	}
+	if len(lvlEtc) > 0 {
+		switch  e0 := lvlEtc[0].(type) {
+		case int:
+			if e0 > 0 && e0 < 6 {
+				l.Level = logrus.Level(e0)
+			}
+		}
+	}
+
 	if DSN == "" {
 		return l
 	}
@@ -39,7 +47,12 @@ func NewLogger(logPath, DSN, release string, color bool) *logrus.Logger {
 		panic(err)
 	}
 	client.SetRelease(release)
-
+	if len(lvlEtc) > 1 {
+		switch  e1 := lvlEtc[1].(type) {
+		case string:
+			client.Tags = map[string]string{"name": e1}
+		}
+	}
 	h, err := logrus_sentry.NewWithClientSentryHook(client, []logrus.Level{logrus.PanicLevel, logrus.FatalLevel, logrus.ErrorLevel})
 	if err != nil {
 		panic(err)
@@ -95,8 +108,8 @@ func LogBuilder(l *logrus.Logger, okLvl, errLvl int) func(err error, okStr, fail
 	return func(err error, okStr, failStr string, fileds ...string) func(values ...interface{}) bool {
 		var (
 			logBody *logrus.Entry
-			ok = err == nil
-			vLen int
+			ok      = err == nil
+			vLen    int
 		)
 
 		if !ok {

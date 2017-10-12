@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"time"
 	"github.com/Sirupsen/logrus"
+	"fmt"
 )
 
 type Field struct {
@@ -15,30 +16,31 @@ type Field struct {
 }
 
 type Attachment struct {
-	Fallback   string   `json:"fallback"`
-	Color      string   `json:"color"`
-	PreText    string   `json:"pretext"`
-	AuthorName string   `json:"author_name"`
-	AuthorLink string   `json:"author_link"`
-	AuthorIcon string   `json:"author_icon"`
-	Title      string   `json:"title"`
-	TitleLink  string   `json:"title_link"`
-	Text       string   `json:"text"`
-	ImageUrl   string   `json:"image_url"`
-	Fields     []*Field `json:"fields"`
-	Footer     string   `json:"footer"`
-	FooterIcon string   `json:"footer_icon"`
-	TimeStamp  int64    `json:"ts"`
-	MarkdownIn []string `json:"mrkdwn_in,omitempty"`
+	Action     []map[string]string `json:"action"`
+	Fallback   string              `json:"fallback"`
+	Color      string              `json:"color"`
+	PreText    string              `json:"pretext"`
+	AuthorName string              `json:"author_name"`
+	AuthorLink string              `json:"author_link"`
+	AuthorIcon string              `json:"author_icon"`
+	Title      string              `json:"title"`
+	TitleLink  string              `json:"title_link"`
+	Text       string              `json:"text"`
+	ImageUrl   string              `json:"image_url"`
+	Fields     []*Field            `json:"fields"`
+	Footer     string              `json:"footer"`
+	FooterIcon string              `json:"footer_icon"`
+	TimeStamp  int64               `json:"ts"`
+	MarkdownIn []string            `json:"mrkdwn_in,omitempty"`
 }
 
 type SlackData struct {
-	Parse       string       `json:"parse,omitempty"`
-	Username    string       `json:"username,omitempty"`
-	IconUrl     string       `json:"icon_url,omitempty"`
-	IconEmoji   string       `json:"icon_emoji,omitempty"`
-	Channel     string       `json:"channel,omitempty"`
-	Text        string       `json:"text,omitempty"`
+	Parse       string        `json:"parse,omitempty"`
+	Username    string        `json:"username,omitempty"`
+	IconUrl     string        `json:"icon_url,omitempty"`
+	IconEmoji   string        `json:"icon_emoji,omitempty"`
+	Channel     string        `json:"channel,omitempty"`
+	Text        string        `json:"text,omitempty"`
 	Attachments []*Attachment `json:"attachments,omitempty"`
 }
 
@@ -55,8 +57,8 @@ func (sd *SlackData) Attach(as ...*Attachment) {
 
 }
 
-func (sd *SlackData) Send() {
-	FeedSlack(sd, logrus.New())
+func (sd *SlackData) Send(dsn ...string) {
+	FeedSlack(dsn, sd, logrus.New())
 }
 
 func (attachment *Attachment) AddField(field Field) *Attachment {
@@ -72,25 +74,30 @@ func NewAttatchment(title string) *Attachment {
 	}
 }
 
-func FeedSlack(d *SlackData, Logger *logrus.Logger) {
+func FeedSlack(dsn []string, d *SlackData, Log *logrus.Logger) {
 	client := &http.Client{Timeout: time.Second * 45}
-	bz, err := json.Marshal(*d)
+	buf := new(bytes.Buffer)
+	err := json.NewEncoder(buf).Encode(d)
 	if err != nil {
-		Logger.Warnln("json marshal err", err)
+		Log.Warnln("json marshal err", err)
 		return
 	}
-	Logger.Println(string(bz))
-	r, err := http.NewRequest("POST", "https://hooks.slack.com/services/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", bytes.NewBuffer(bz))
+	Log.Println(fmt.Sprintf("%+v", d))
+	url := "https://hooks.slack.com/services/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"
+	if len(dsn) > 0 {
+		url = dsn[0]
+	}
+	r, err := http.NewRequest("POST", url, buf)
 	if err != nil {
-		Logger.Warnln("create http post err", err)
+		Log.Warnln("create http post err", err)
 		return
 	}
 	r.Header.Add("Content-Type", "application/json")
 	for i := 0; i < 3; i++ {
 		if resp, err := client.Do(r); err != nil {
-			Logger.Warnln("post err", err)
+			Log.Warnln("post err", err)
 		} else {
-			Logger.Printf("Slack api updated, status %v.", resp.StatusCode)
+			Log.Printf("Slack api updated, status %v.", resp.StatusCode)
 			break
 		}
 	}
