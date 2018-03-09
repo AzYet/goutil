@@ -1,82 +1,13 @@
 package goutil
 
 import (
+	"reflect"
 	"testing"
-	"fmt"
-	"github.com/pkg/errors"
+
 	"github.com/Sirupsen/logrus"
+	"github.com/pkg/errors"
 	"gopkg.in/natefinch/lumberjack.v2"
 )
-
-func TestLogBuilder1(t *testing.T) {
-	defer func() {
-		fmt.Println(recover())
-	}()
-	l := NewLogger("", "", "", true)
-	//test normal func
-	fmt.Println("_________________should info success")
-	l.Info("success")
-	fmt.Println("_________________should warn error")
-	l.WI(errors.New("i am err"), "success", "fail")()
-	fmt.Println("_________________should panic")
-	//l.PI(errors.New("i am panic"), "success", "fail")()
-}
-func TestNewLog(t *testing.T) {
-	l := NewLogger("/tmp/test.log", "", "", true, true)
-
-
-	// print err only
-	l.Infoln("_________________should be no print")
-	l.EI(nil, "", "fail")()
-	l.Infoln("_________________should print err")
-	l.EI(errors.New("i am error"), "ok", "fail")()
-
-	// info info when no error, and error when error
-	l.Infoln("_________________should info ok")
-	l.EI(nil, "ok", "fail")()
-	l.Infoln("_________________should print error")
-	l.EI(errors.New("i am error"), "ok", "fail")()
-	l.Infoln("_________________should be no print")
-	l.EI(nil, "", "fail")()
-
-	// info info when no error, and error when error
-	l.Infoln("_________________should debug ok")
-	l.ED(nil, "ok", "fail")()
-	l.Infoln("_________________should print warn")
-	l.ED(errors.New("i am error"), "ok", "fail")()
-	l.Infoln("_________________should be no print")
-	l.ED(nil, "", "fail")()
-
-}
-
-func BenchmarkNewCustLogger(b *testing.B) {
-	l := NewLogger("/tmp/test.log", "", "", true, true)
-	//l := NewLogger("", "", "", true, false)
-
-	for i := 0; i < b.N; i++ {
-		// print err only
-		l.Infoln("_________________should be no print")
-		l.EI(nil, "", "fail")()
-		l.Infoln("_________________should print err")
-		l.EI(errors.New("i am error"), "ok", "fail")()
-
-		// info info when no error, and error when error
-		l.Infoln("_________________should info ok")
-		l.EI(nil, "ok", "fail")()
-		l.Infoln("_________________should print error")
-		l.EI(errors.New("i am error"), "ok", "fail")()
-		l.Infoln("_________________should be no print")
-		l.EI(nil, "", "fail")()
-
-		// info info when no error, and error when error
-		l.Infoln("_________________should debug ok")
-		l.ED(nil, "ok", "fail")()
-		l.Infoln("_________________should print warn")
-		l.ED(errors.New("i am error"), "ok", "fail")()
-		l.Infoln("_________________should be no print")
-		l.ED(nil, "", "fail")()
-	}
-}
 
 func BenchmarkOrignLogger(b *testing.B) {
 	l := logrus.New()
@@ -129,5 +60,34 @@ func BenchmarkOrignLogger(b *testing.B) {
 		if err != nil {
 			l.Info("ok")
 		}
+	}
+}
+
+func TestNewLogger(t *testing.T) {
+	type args struct {
+		logPath string
+		DSN     string
+		release string
+		color   bool
+	}
+	tests := []struct {
+		name string
+		args args
+		want *logrus.Logger
+	}{
+		{
+			"empty args",
+			args{"", "", "", true},
+			nil,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := NewLogger(tt.args.logPath, tt.args.DSN, tt.args.release, tt.args.color); !reflect.DeepEqual(got, tt.want) {
+				if got.Out == nil {
+					t.Errorf("NewLogger() = %+v, want %+v", got, tt.want)
+				}
+			}
+		})
 	}
 }

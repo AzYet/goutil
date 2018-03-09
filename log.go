@@ -1,32 +1,44 @@
 package goutil
 
 import (
-	"github.com/AzYet/logrus-prefixed-formatter"
-	"github.com/getsentry/raven-go"
-	"github.com/evalphobia/logrus_sentry"
+	"github.com/x-cray/logrus-prefixed-formatter"
 	"github.com/Sirupsen/logrus"
+	"github.com/evalphobia/logrus_sentry"
+	"github.com/getsentry/raven-go"
 	"gopkg.in/natefinch/lumberjack.v2"
 )
 
-func NewLogger(logPath, DSN, release string, color bool) *logrus.Logger {
+//NewLogger creates a new *logrus.Logger with sentry hook if DSN and Version provided
+func NewLogger(logPath, DSN, release string, color bool, lvlEtc ...interface{}) *logrus.Logger {
 	l := logrus.New()
 	fmtr := &prefixed.TextFormatter{}
 	fmtr.TimestampFormat = "2006/01/02 15:04:05"
-	if color {
-		fmtr.ForceColors = true
+	fmtr.ForceFormatting = true
+	fmtr.FullTimestamp = true
+	fmtr.ForceColors = true
+	if !color {
+		fmtr.DisableColors = true
 	}
 	l.Formatter = fmtr
 	l.Level = logrus.DebugLevel
 
 	if logPath != "" {
-		rotator := &lumberjack.Logger{
+		l.Out = &lumberjack.Logger{
 			Filename:   logPath,
 			MaxSize:    150, // megabytes
 			MaxBackups: 3,
 			MaxAge:     28, //days
 		}
-		l.Out = (rotator)
 	}
+	if len(lvlEtc) > 0 {
+		switch  e0 := lvlEtc[0].(type) {
+		case int:
+			if e0 > 0 && e0 < 6 {
+				l.Level = logrus.Level(e0)
+			}
+		}
+	}
+
 	if DSN == "" {
 		return l
 	}
@@ -35,20 +47,26 @@ func NewLogger(logPath, DSN, release string, color bool) *logrus.Logger {
 		panic(err)
 	}
 	client.SetRelease(release)
-
-	h, err := logrus_sentry.NewWithClientSentryHook(client, []logrus.Level{logrus.PanicLevel, logrus.FatalLevel, logrus.ErrorLevel, })
+	if len(lvlEtc) > 1 {
+		switch  e1 := lvlEtc[1].(type) {
+		case string:
+			client.Tags = map[string]string{"name": e1}
+		}
+	}
+	h, err := logrus_sentry.NewWithClientSentryHook(client, []logrus.Level{logrus.PanicLevel, logrus.FatalLevel, logrus.ErrorLevel})
 	if err != nil {
 		panic(err)
 	}
 	h.StacktraceConfiguration = logrus_sentry.StackTraceConfiguration{
-		Enable :true,
+		Enable: true,
 		// the level at which to start capturing stacktraces
-		Level : logrus.ErrorLevel,
+		Level: logrus.ErrorLevel,
 	}
 	l.Hooks.Add(h)
 	return l
 }
 
+//NewLogrusWithSentryHook creates a new logrus.Logger with sentry hook if DSL and Version provided
 func NewLogrusWithSentryHook(color bool, DSL, release string) *logrus.Logger {
 	l := logrus.New()
 	fmtr := &prefixed.TextFormatter{}
@@ -74,29 +92,29 @@ func NewLogrusWithSentryHook(color bool, DSL, release string) *logrus.Logger {
 		l.Errorf("failed to create hook %v.", err)
 	} else {
 		h.StacktraceConfiguration = logrus_sentry.StackTraceConfiguration{
-			Enable :true,
+			Enable: true,
 			// the level at which to start capturing stacktraces
-			Level : logrus.ErrorLevel,
+			Level: logrus.ErrorLevel,
 		}
 		l.Hooks.Add(h)
 	}
 	return l
 }
 
-// deprecated: turned out to be slow in benchmark
+//LogBuilder deprecated: turned out to be slow in benchmark
 // if you want no out put when no error, either set okLvl to -1 or okStr to ""
-func LogBuilder(l *logrus.Logger, okLvl, errLvl int) func(err error, okStr, failStr string, fileds... string) func(values... interface{}) bool {
+func LogBuilder(l *logrus.Logger, okLvl, errLvl int) func(err error, okStr, failStr string, fileds ...string) func(values ...interface{}) bool {
 
-	return func(err error, okStr, failStr string, fileds... string) func(values... interface{}) bool {
+	return func(err error, okStr, failStr string, fileds ...string) func(values ...interface{}) bool {
 		var (
 			logBody *logrus.Entry
-			ok = err == nil
-			vLen int
+			ok      = err == nil
+			vLen    int
 		)
 
 		if !ok {
 			logBody = l.WithError(err)
-			return func(values... interface{}) bool {
+			return func(values ...interface{}) bool {
 				vLen = len(values)
 				for k, v := range fileds {
 					if k < vLen {
@@ -104,16 +122,20 @@ func LogBuilder(l *logrus.Logger, okLvl, errLvl int) func(err error, okStr, fail
 					}
 				}
 				switch errLvl {
-				case 0:logBody.Panic(failStr)
-				case 1:logBody.Fatal(failStr)
-				case 2:logBody.Error(failStr)
-				case 3:logBody.Warn(failStr)
+				case 0:
+					logBody.Panic(failStr)
+				case 1:
+					logBody.Fatal(failStr)
+				case 2:
+					logBody.Error(failStr)
+				case 3:
+					logBody.Warn(failStr)
 				}
 				return ok
 			}
 		} else if okLvl > 0 && okStr != "" {
 			logBody = l.WithFields(logrus.Fields{})
-			return func(values... interface{}) bool {
+			return func(values ...interface{}) bool {
 				vLen = len(values)
 				for k, v := range fileds {
 					if k < vLen {
@@ -121,14 +143,17 @@ func LogBuilder(l *logrus.Logger, okLvl, errLvl int) func(err error, okStr, fail
 					}
 				}
 				switch errLvl {
-				case 3: logBody.Warn(okStr)
-				case 4: logBody.Info(okStr)
-				case 5: logBody.Debug(okStr)
+				case 3:
+					logBody.Warn(okStr)
+				case 4:
+					logBody.Info(okStr)
+				case 5:
+					logBody.Debug(okStr)
 				}
 				return ok
 			}
 		} else {
-			return func(values... interface{}) bool {
+			return func(values ...interface{}) bool {
 				return ok
 			}
 		}
