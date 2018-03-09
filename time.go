@@ -11,20 +11,20 @@ type Ticker struct {
 	s chan int
 }
 
-func (t *Ticker)Stop() {
+func (t *Ticker) Stop() {
 	t.s <- -1
 }
-func (t *Ticker)Tick() {
+func (t *Ticker) Tick() {
 	t.s <- 1
 }
-func (t *Ticker)Update(interval, delay time.Duration) {
+func (t *Ticker) Update(interval, delay time.Duration) {
 	t.I = interval
 	t.D = delay
 }
 
-func NewTicker(interval time.Duration, delay time.Duration) *Ticker {
-	tc := make(chan time.Time)
-	tms := &Ticker{tc, interval, delay, make(chan int, 1) }
+func NewTickerWithBuffer(interval time.Duration, delay time.Duration, bufferSize int) *Ticker {
+	tc := make(chan time.Time, bufferSize)
+	tms := &Ticker{tc, interval, delay, make(chan int, 1)}
 	ts := time.Now()
 	go func() {
 		if sub := ts.Sub(ts.Truncate(tms.I)) - tms.D; sub >= 0 {
@@ -41,10 +41,10 @@ func NewTicker(interval time.Duration, delay time.Duration) *Ticker {
 			timer := time.NewTimer(ts.Truncate(tms.I).Add(tms.I).Add(tms.D).Sub(ts))
 			select {
 			case <-timer.C:
-					select {
-					case <-tc:
-					default:
-					}
+				select {
+				case <-tc:
+				default:
+				}
 				tc <- time.Now()
 			case i := <-tms.s:
 				if i < 0 {
@@ -63,3 +63,6 @@ func NewTicker(interval time.Duration, delay time.Duration) *Ticker {
 	return tms
 }
 
+func NewTicker(interval time.Duration, delay time.Duration) *Ticker {
+	return NewTickerWithBuffer(interval, delay, 0)
+}
