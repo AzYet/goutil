@@ -1,15 +1,17 @@
 package goutil
 
 import (
-	"github.com/x-cray/logrus-prefixed-formatter"
 	"github.com/Sirupsen/logrus"
 	"github.com/evalphobia/logrus_sentry"
 	"github.com/getsentry/raven-go"
+	"github.com/onrik/logrus/filename"
+	"github.com/x-cray/logrus-prefixed-formatter"
 	"gopkg.in/natefinch/lumberjack.v2"
 )
 
 //NewLogger creates a new *logrus.Logger with sentry hook if DSN and Version provided
-func NewLogger(logPath, DSN, release string, color bool, lvlEtc ...interface{}) *logrus.Logger {
+//current lvlEtc are level(int), app name(string), enable source (bool)
+func NewLogger(logPath, DSN, release string, color bool, lvlNameSrcEtc ...interface{}) *logrus.Logger {
 	l := logrus.New()
 	fmtr := &prefixed.TextFormatter{}
 	fmtr.TimestampFormat = "2006/01/02 15:04:05"
@@ -30,11 +32,26 @@ func NewLogger(logPath, DSN, release string, color bool, lvlEtc ...interface{}) 
 			MaxAge:     28, //days
 		}
 	}
-	if len(lvlEtc) > 0 {
-		switch  e0 := lvlEtc[0].(type) {
+	var ravenTags map[string]string
+	for i, v := range lvlNameSrcEtc {
+		switch ex := v.(type) {
 		case int:
-			if e0 > 0 && e0 < 6 {
-				l.Level = logrus.Level(e0)
+			if i == 0 && ex >= 0 && ex < 6 {
+				if ex < 4 {
+					l.WithField("level",logrus.Level(ex)).Warnf("log level is lower than INFO")
+				}else {
+					l.WithField("level",logrus.Level(ex)).Info("log level set ok.")
+				}
+
+				l.Level = logrus.Level(ex)
+			}
+		case string: // raven tag of pudge type
+			if i == 1 && ex != "" {
+				ravenTags = map[string]string{"name": ex}
+			}
+		case bool:
+			if i == 2 && ex {
+				l.Hooks.Add(filename.NewHook())
 			}
 		}
 	}
@@ -47,11 +64,8 @@ func NewLogger(logPath, DSN, release string, color bool, lvlEtc ...interface{}) 
 		panic(err)
 	}
 	client.SetRelease(release)
-	if len(lvlEtc) > 1 {
-		switch  e1 := lvlEtc[1].(type) {
-		case string:
-			client.Tags = map[string]string{"name": e1}
-		}
+	if ravenTags != nil {
+		client.Tags = ravenTags
 	}
 	h, err := logrus_sentry.NewWithClientSentryHook(client, []logrus.Level{logrus.PanicLevel, logrus.FatalLevel, logrus.ErrorLevel})
 	if err != nil {
