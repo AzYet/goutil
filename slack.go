@@ -5,7 +5,7 @@ import (
 	"net/http"
 	"encoding/json"
 	"time"
-	"github.com/Sirupsen/logrus"
+	"github.com/sirupsen/logrus"
 	"fmt"
 )
 
