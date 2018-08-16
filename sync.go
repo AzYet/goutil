@@ -4,11 +4,11 @@ import (
 	"sync"
 )
 
-func NewWorkerGroup(workerNum int) (chan int, *sync.WaitGroup, func() func()) {
-	routine := make(chan int, workerNum)
+func NewWorkerGroup(workerNum int) (chan struct{}, *sync.WaitGroup, func() func()) {
+	routine := make(chan struct{}, workerNum)
 	w := new(sync.WaitGroup)
 	return routine, w, func() func() {
-		routine <- 1
+		routine <- struct{}{}
 		w.Add(1)
 		return func() {
 			w.Done()
@@ -16,16 +16,12 @@ func NewWorkerGroup(workerNum int) (chan int, *sync.WaitGroup, func() func()) {
 		}
 	}
 }
-func NewWorkerGroupWithReturn(workerNum int) (*sync.WaitGroup, chan interface{}, func() func(res interface{})) {
-	routine := make(chan int, workerNum)
-	w := new(sync.WaitGroup)
-	c := make(chan interface{}, workerNum)
-	return w, c, func() func(interface{}) {
-		routine <- 1
-		w.Add(1)
+func NewWorkerGroupWithReturn(workerNum int) (chan interface{}, func() func(res interface{})) {
+	routine, c := make(chan struct{}, workerNum), make(chan interface{}, workerNum)
+	return c, func() func(interface{}) {
+		routine <- struct{}{}
 		return func(r interface{}) {
 			c <- r
-			w.Done()
 			<-routine
 		}
 	}
@@ -33,7 +29,7 @@ func NewWorkerGroupWithReturn(workerNum int) (*sync.WaitGroup, chan interface{},
 
 //Create a fixed size pool of recycled resource, call the return func with nil to get resource, call with resource to return to pool , when pool exhausts, getting resource causes block
 //make sure return resource when done, do not return nil to pool, as pool will not check for nil, unless you intent to
-func NewResPool(size int, newRes func() (interface{}, error)) (func(interface{}) interface{}) {
+func NewResPool(size int, newRes func() (interface{}, error)) func(interface{}) interface{} {
 	pool := make(chan interface{}, size)
 	for i := 0; i < size; i++ {
 		pool <- nil

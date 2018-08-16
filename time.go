@@ -38,14 +38,13 @@ func NewTickerWithBuffer(interval time.Duration, delay time.Duration, bufferSize
 		}
 		for {
 			ts = time.Now()
-			timer := time.NewTimer(ts.Truncate(tms.I).Add(tms.I).Add(tms.D).Sub(ts))
 			select {
-			case <-timer.C:
+			case now := <-time.After(ts.Truncate(tms.I).Add(tms.I + tms.D).Sub(ts)):
 				select {
 				case <-tc:
 				default:
 				}
-				tc <- time.Now()
+				tc <- now
 			case i := <-tms.s:
 				if i < 0 {
 					return
@@ -57,7 +56,6 @@ func NewTickerWithBuffer(interval time.Duration, delay time.Duration, bufferSize
 				}
 
 			}
-			timer.Stop()
 		}
 	}()
 	return tms

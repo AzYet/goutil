@@ -27,7 +27,7 @@ func TestNewResPool(t *testing.T) {
 }
 
 func TestNewWorkerGroupWithReturn(t *testing.T) {
-	_, c, reg := NewWorkerGroupWithReturn(2)
+	c, reg := NewWorkerGroupWithReturn(2)
 	go func() {
 		for i := 0; i < 12; i++ {
 			go func(i int, f func(r interface{})) {
