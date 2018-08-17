@@ -24,7 +24,7 @@ Example:
     }
 
 */
-package goutil // import "golang.org/x/exp/inotify"
+package goutil
 
 import (
 	"errors"
