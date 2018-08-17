@@ -10,7 +10,6 @@ import (
 	"strings"
 	"sync"
 
-	"golang.org/x/exp/inotify"
 )
 
 // AutoReloader watch json file and decode it into pointer of struct, t must be a value of struct not a pointer
@@ -86,7 +85,7 @@ type NameBytes struct {
 
 func ReadAndWatchFile(dir string, fileList ...string) chan NameBytes {
 	bzChan := make(chan NameBytes, len(fileList))
-	watcher, err := inotify.NewWatcher()
+	watcher, err := NewWatcher()
 	if err != nil {
 		return nil
 	}
@@ -103,8 +102,8 @@ func ReadAndWatchFile(dir string, fileList ...string) chan NameBytes {
 	}
 	go func() {
 		for event := range watcher.Event {
-			if (event.Mask & inotify.IN_CLOSE_WRITE == inotify.IN_CLOSE_WRITE ||
-				event.Mask & inotify.IN_MOVED_TO == inotify.IN_MOVED_TO) &&
+			if (event.Mask & IN_CLOSE_WRITE == IN_CLOSE_WRITE ||
+				event.Mask & IN_MOVED_TO == IN_MOVED_TO) &&
 				nameMap[event.Name[strings.LastIndex(event.Name, "/") + 1:]] {
 				readSendFn(event.Name)
 			}
