@@ -11,8 +11,8 @@ func NewWorkerGroup(workerNum int) (chan struct{}, *sync.WaitGroup, func() func(
 		routine <- struct{}{}
 		w.Add(1)
 		return func() {
-			w.Done()
 			<-routine
+			w.Done()
 		}
 	}
 }
@@ -27,7 +27,8 @@ func NewWorkerGroupWithReturn(workerNum int) (chan interface{}, func() func(res 
 	}
 }
 
-//Create a fixed size pool of recycled resource, call the return func with nil to get resource, call with resource to return to pool , when pool exhausts, getting resource causes block
+//Create a fixed size pool of recycled resource, call the return func with nil to get resource, call with resource to return to pool,
+// when pool exhausts, getting resource causes block
 //make sure return resource when done, do not return nil to pool, as pool will not check for nil, unless you intent to
 func NewResPool(size int, newRes func() (interface{}, error)) func(interface{}) interface{} {
 	pool := make(chan interface{}, size)
@@ -36,7 +37,7 @@ func NewResPool(size int, newRes func() (interface{}, error)) func(interface{}) 
 	}
 	getc, retc, out := make(chan interface{}), make(chan interface{}), make(chan interface{})
 	go func() {
-		for _ = range getc {
+		for range getc {
 			//get
 			i := <-pool
 			if i == nil {
