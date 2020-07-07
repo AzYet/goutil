@@ -9,7 +9,6 @@ import (
 	"reflect"
 	"strings"
 	"sync"
-
 )
 
 // AutoReloader watch json file and decode it into pointer of struct, t must be a value of struct not a pointer
@@ -22,9 +21,9 @@ func AutoReloader(path string, t interface{}) (interface{}, func() interface{}, 
 	}
 	var (
 		initiated bool
-		w = new(sync.WaitGroup)
+		w         = new(sync.WaitGroup)
 		latest    interface{}
-		in, out = make(chan int), make(chan interface{})
+		in, out   = make(chan int), make(chan interface{})
 	)
 	w.Add(1)
 	go func() {
@@ -78,11 +77,13 @@ func AutoReloader(path string, t interface{}) (interface{}, func() interface{}, 
 	return latest, load, watch
 }
 
+//NameBytes warp filename and content
 type NameBytes struct {
 	Name string
 	Bz   []byte
 }
 
+//ReadAndWatchFile watches a file list and do init read
 func ReadAndWatchFile(dir string, fileList ...string) chan NameBytes {
 	bzChan := make(chan NameBytes, len(fileList))
 	watcher, err := NewWatcher()
@@ -102,9 +103,9 @@ func ReadAndWatchFile(dir string, fileList ...string) chan NameBytes {
 	}
 	go func() {
 		for event := range watcher.Event {
-			if (event.Mask & IN_CLOSE_WRITE == IN_CLOSE_WRITE ||
-				event.Mask & IN_MOVED_TO == IN_MOVED_TO) &&
-				nameMap[event.Name[strings.LastIndex(event.Name, "/") + 1:]] {
+			if (event.Mask&IN_CLOSE_WRITE == IN_CLOSE_WRITE ||
+				event.Mask&IN_MOVED_TO == IN_MOVED_TO) &&
+				nameMap[event.Name[strings.LastIndex(event.Name, "/")+1:]] {
 				readSendFn(event.Name)
 			}
 		}

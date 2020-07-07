@@ -1,11 +1,10 @@
 package goutil
 
 import (
-	"reflect"
 	"testing"
 
-	"github.com/sirupsen/logrus"
 	"github.com/pkg/errors"
+	"github.com/sirupsen/logrus"
 	"gopkg.in/natefinch/lumberjack.v2"
 )
 
@@ -69,6 +68,7 @@ func TestNewLogger(t *testing.T) {
 		DSN     string
 		release string
 		color   bool
+		src     bool
 	}
 	tests := []struct {
 		name string
@@ -76,18 +76,22 @@ func TestNewLogger(t *testing.T) {
 		want *logrus.Logger
 	}{
 		{
-			"empty args",
-			args{"", "", "", true},
+			"colored",
+			args{"", "", "", true, true},
+			nil,
+		},
+		{
+			"no color",
+			args{"", "", "", false, true},
 			nil,
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if got := NewLogger(tt.args.logPath, tt.args.DSN, tt.args.release, tt.args.color); !reflect.DeepEqual(got, tt.want) {
-				if got.Out == nil {
-					t.Errorf("NewLogger() = %+v, want %+v", got, tt.want)
-				}
-			}
+			got := NewLogger(tt.args.logPath, tt.args.DSN, tt.args.release, tt.args.color, 4, "", tt.args.src)
+			got.Infof("hello")
+			got.Infof("hello1")
+			got.Infof("hello2")
 		})
 	}
 }

@@ -1,29 +1,40 @@
 package goutil
 
 import (
-	"github.com/sirupsen/logrus"
+	"fmt"
+	"os"
+	"path"
+	"runtime"
+	"strings"
+
 	"github.com/evalphobia/logrus_sentry"
 	"github.com/getsentry/raven-go"
-	"github.com/onrik/logrus/filename"
-	"github.com/x-cray/logrus-prefixed-formatter"
+	"github.com/sirupsen/logrus"
 	"gopkg.in/natefinch/lumberjack.v2"
 )
 
 //NewLogger creates a new *logrus.Logger with sentry hook if DSN and Version provided
-//current lvlEtc are level(int), app name(string), enable source (bool)
+//current lvlNameSrcEtc are level(int), app name(string), enable source (bool)
 func NewLogger(logPath, DSN, release string, color bool, lvlNameSrcEtc ...interface{}) *logrus.Logger {
-	l := logrus.New()
-	fmtr := &prefixed.TextFormatter{}
-	fmtr.TimestampFormat = "2006/01/02 15:04:05"
-	fmtr.ForceFormatting = true
-	fmtr.FullTimestamp = true
-	fmtr.ForceColors = true
-	if !color {
-		fmtr.DisableColors = true
+	l := &logrus.Logger{
+		Out:   os.Stdout,
+		Hooks: make(logrus.LevelHooks),
+		Formatter: &logrus.TextFormatter{
+			CallerPrettyfier: func(frame *runtime.Frame) (function string, file string) {
+				dir, file := path.Split(frame.File)
+				return "", fmt.Sprintf("%s:%d",
+					path.Join(path.Base(strings.TrimSuffix(dir, "/")), file), frame.Line)
+			},
+			TimestampFormat: "2006/01/02 15:04:05",
+			FullTimestamp:   true,
+			ForceColors:     color,
+			DisableColors:   !color,
+			FieldMap:        logrus.FieldMap{logrus.FieldKeyFile: "~src"},
+		},
+		ReportCaller: len(lvlNameSrcEtc) >= 3 && lvlNameSrcEtc[2] == true,
+		Level:        logrus.InfoLevel,
+		ExitFunc:     os.Exit,
 	}
-	l.Formatter = fmtr
-	l.Level = logrus.DebugLevel
-
 	if logPath != "" {
 		l.Out = &lumberjack.Logger{
 			Filename:   logPath,
@@ -32,30 +43,12 @@ func NewLogger(logPath, DSN, release string, color bool, lvlNameSrcEtc ...interf
 			MaxAge:     28, //days
 		}
 	}
-	var ravenTags map[string]string
-	for i, v := range lvlNameSrcEtc {
-		switch ex := v.(type) {
-		case int:
-			if i == 0 && ex >= 0 && ex < 6 {
-				if ex < 4 {
-					l.WithField("level",logrus.Level(ex)).Warnf("log level is lower than INFO")
-				}else {
-					l.WithField("level",logrus.Level(ex)).Info("log level set ok.")
-				}
-
-				l.Level = logrus.Level(ex)
-			}
-		case string: // raven tag of pudge type
-			if i == 1 && ex != "" {
-				ravenTags = map[string]string{"name": ex}
-			}
-		case bool:
-			if i == 2 && ex {
-				l.Hooks.Add(filename.NewHook())
-			}
+	if len(lvlNameSrcEtc) > 0 {
+		if lvl, ok := lvlNameSrcEtc[0].(int); ok && lvl >= 0 && lvl < 6 {
+			l.WithField("level", logrus.Level(lvl)).Info("log level set ok.")
+			l.SetLevel(logrus.Level(lvl))
 		}
 	}
-
 	if DSN == "" {
 		return l
 	}
@@ -64,8 +57,10 @@ func NewLogger(logPath, DSN, release string, color bool, lvlNameSrcEtc ...interf
 		panic(err)
 	}
 	client.SetRelease(release)
-	if ravenTags != nil {
-		client.Tags = ravenTags
+	if len(lvlNameSrcEtc) > 1 {
+		if name, ok := lvlNameSrcEtc[1].(string); ok {
+			client.Tags = map[string]string{"name": name}
+		}
 	}
 	h, err := logrus_sentry.NewWithClientSentryHook(client, []logrus.Level{logrus.PanicLevel, logrus.FatalLevel, logrus.ErrorLevel})
 	if err != nil {
@@ -83,7 +78,7 @@ func NewLogger(logPath, DSN, release string, color bool, lvlNameSrcEtc ...interf
 //NewLogrusWithSentryHook creates a new logrus.Logger with sentry hook if DSL and Version provided
 func NewLogrusWithSentryHook(color bool, DSL, release string) *logrus.Logger {
 	l := logrus.New()
-	fmtr := &prefixed.TextFormatter{}
+	fmtr := &logrus.TextFormatter{}
 	fmtr.TimestampFormat = "2006/01/02 15:04:05"
 	if color {
 		fmtr.ForceColors = true
