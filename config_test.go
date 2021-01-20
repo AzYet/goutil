@@ -1,19 +1,15 @@
 package goutil
 
 import (
-	"testing"
-	"io/ioutil"
 	"fmt"
+	"io/ioutil"
+	"testing"
 	"time"
 )
 
 type TestConfg struct {
 	List []string
 	Map  map[string]int
-}
-
-func (c *TestConfg)Set(l func(), w func()) {
-
 }
 
 func TestAutoReloader(t *testing.T) {
@@ -33,7 +29,6 @@ func TestAutoReloader(t *testing.T) {
 	if len(c.List) == 0 {
 		t.Error("failed to init")
 	}
-
 
 	// test reload
 	testFile = `{"list":["abcd","cde"], "map":{"a":12,"b":23}}`

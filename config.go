@@ -7,8 +7,9 @@ import (
 	"path"
 	"path/filepath"
 	"reflect"
-	"strings"
 	"sync"
+
+	"github.com/fsnotify/fsnotify"
 )
 
 // AutoReloader watch json file and decode it into pointer of struct, t must be a value of struct not a pointer
@@ -86,7 +87,7 @@ type NameBytes struct {
 //ReadAndWatchFile watches a file list and do init read
 func ReadAndWatchFile(dir string, fileList ...string) chan NameBytes {
 	bzChan := make(chan NameBytes, len(fileList))
-	watcher, err := NewWatcher()
+	watcher, err := fsnotify.NewWatcher()
 	if err != nil {
 		return nil
 	}
@@ -102,15 +103,13 @@ func ReadAndWatchFile(dir string, fileList ...string) chan NameBytes {
 		nameMap[f] = true
 	}
 	go func() {
-		for event := range watcher.Event {
-			if (event.Mask&IN_CLOSE_WRITE == IN_CLOSE_WRITE ||
-				event.Mask&IN_MOVED_TO == IN_MOVED_TO) &&
-				nameMap[event.Name[strings.LastIndex(event.Name, "/")+1:]] {
+		for event := range watcher.Events {
+			if event.Op == fsnotify.Write || event.Op == fsnotify.Rename{
 				readSendFn(event.Name)
 			}
 		}
 	}()
-	err = watcher.Watch(dir)
+	err = watcher.Add(dir)
 	if err != nil {
 		panic(err)
 	}
